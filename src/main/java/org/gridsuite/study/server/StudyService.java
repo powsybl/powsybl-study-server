@@ -592,6 +592,22 @@ public class StudyService {
         });
     }
 
+    public Mono<ResponseEntity<Boolean>> lockoutLine(String studyName, String userId, String lineId, boolean lockout) {
+        Mono<UUID> networkUuidMono = getNetworkUuid(studyName, userId);
+
+        return networkUuidMono.flatMap(uuid -> {
+            String path = UriComponentsBuilder.fromPath(DELIMITER + NETWORK_MODIFICATION_API_VERSION + "/networks/{networkUuid}/lines/{lineId}/switches")
+                    .queryParam("lockout", lockout)
+                    .buildAndExpand(uuid, lineId)
+                    .toUriString();
+
+            return webClient.put()
+                    .uri(networkModificationServerBaseUri + path)
+                    .retrieve()
+                    .toEntity(Boolean.class);
+        });
+    }
+
     Mono<UUID> getNetworkUuid(String studyName, String userId) {
         Mono<StudyEntity> studyMono = studyRepository.findStudy(userId, studyName);
         return studyMono.map(StudyEntity::getNetworkUuid)

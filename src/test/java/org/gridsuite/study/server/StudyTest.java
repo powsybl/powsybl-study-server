@@ -248,6 +248,9 @@ public class StudyTest extends AbstractEmbeddedCassandraSetup {
                         return new MockResponse().setResponseCode(200).addHeader("Content-Disposition", "attachment; filename=fileName").setBody("byteData")
                                 .addHeader("Content-Type", "application/json; charset=utf-8");
 
+                    case "/v1/networks/38400000-8cf0-11bd-b23e-10b96e4ef00d/lines/lineId/switches?lockout=true":
+                        return new MockResponse().setResponseCode(200);
+
                     case "/v1/networks/" + NETWORK_UUID_STRING + "/run-and-save?contingencyListName=ls&receiver=%257B%2522studyName%2522%253A%2522newName%2522%252C%2522userId%2522%253A%2522userId%2522%257D":
                         input.send(MessageBuilder.withPayload("")
                                 .setHeader("resultUuid", SECURITY_ANALYSIS_UUID)
@@ -416,8 +419,13 @@ public class StudyTest extends AbstractEmbeddedCassandraSetup {
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentType(MediaType.APPLICATION_JSON)
-                 .expectBody(StudyInfos.class)
+                .expectBody(StudyInfos.class)
                 .value(new MatcherStudyInfos(StudyInfos.builder().studyName("s2").userId("userId").description("desc").caseFormat("XIIDM").creationDate(ZonedDateTime.now(ZoneId.of("UTC"))).loadFlowResult(new LoadFlowResult()).build()));
+
+        webTestClient.put()
+                .uri("/v1/userId/studies/{studyName}/network-modification/lines/{lineId}/switches?lockout=true", "s2", "lineId")
+                .exchange()
+                .expectStatus().isOk();
 
         //try to get the study s2 with another user -> unauthorized because study is private
         webTestClient.get()
